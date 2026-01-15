@@ -1,0 +1,6 @@
+{
+  "$schema": "https://schema.zeabur.app/template.json",
+  "name": "Bybit API Proxy",
+  "description": "A proxy server for Bybit API to bypass regional restrictions",
+  "icon": "https://www.bybit.com/favicon.ico"
+}
