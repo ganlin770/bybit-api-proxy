@@ -21,6 +21,17 @@ app.get('/', (req, res) => {
   });
 });
 
+// 获取服务器出口IP
+app.get('/ip', async (req, res) => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    res.json({ ip: data.ip });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 代理Bybit API请求
 app.all('/proxy/*', async (req, res) => {
   try {
