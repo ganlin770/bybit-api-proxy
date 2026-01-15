@@ -135,9 +135,60 @@ app.post('/signed-request', async (req, res) => {
   }
 });
 
+// 签名POST请求 - 用于下单等需要POST的操作
+app.post('/signed-post', async (req, res) => {
+  try {
+    const { apiKey, apiSecret, endpoint, body = {} } = req.body;
+    
+    if (!apiKey || !apiSecret || !endpoint) {
+      return res.status(400).json({ 
+        retCode: -1, 
+        retMsg: 'Missing required fields: apiKey, apiSecret, endpoint' 
+      });
+    }
+    
+    const timestamp = Date.now().toString();
+    const recvWindow = '20000';
+    
+    // POST请求使用JSON body生成签名
+    const bodyString = JSON.stringify(body);
+    const signStr = timestamp + apiKey + recvWindow + bodyString;
+    const signature = crypto.createHmac('sha256', apiSecret).update(signStr).digest('hex');
+    
+    const url = `${BYBIT_BASE_URL}${endpoint}`;
+    
+    console.log(`[Signed POST] ${url}`);
+    console.log(`[Signed POST] Body:`, bodyString);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-BAPI-API-KEY': apiKey,
+        'X-BAPI-SIGN': signature,
+        'X-BAPI-TIMESTAMP': timestamp,
+        'X-BAPI-RECV-WINDOW': recvWindow,
+      },
+      body: bodyString,
+    });
+    
+    const data = await response.json();
+    console.log(`[Signed POST] Response: ${response.status} - retCode: ${data.retCode}`);
+    
+    res.json(data);
+  } catch (error) {
+    console.error('[Signed POST] Error:', error.message);
+    res.status(500).json({ 
+      retCode: -1, 
+      retMsg: `Request error: ${error.message}` 
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Bybit API Proxy Server running on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/`);
   console.log(`Proxy endpoint: http://localhost:${PORT}/proxy/{bybit-api-path}`);
-  console.log(`Signed request: POST http://localhost:${PORT}/signed-request`);
+  console.log(`Signed GET request: POST http://localhost:${PORT}/signed-request`);
+  console.log(`Signed POST request: POST http://localhost:${PORT}/signed-post`);
 });
